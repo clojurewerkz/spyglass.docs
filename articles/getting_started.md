@@ -12,7 +12,7 @@ It should take about 15 minutes to read and study the provided code examples. Th
  * Clojure and Memcached Server version requirements
  * How to add Spyglass dependency to your project
  * A very brief introduction to Spyglass capabilities
- * Examples of most common Memcached operations with Spyglass
+ * Examples of the most common Memcached operations with Spyglass
 
 This work is licensed under a <a rel="license" href="http://creativecommons.org/licenses/by/3.0/">Creative Commons Attribution 3.0 Unported License</a> (including images & stylesheets). The source is available [on Github](https://github.com/clojurewerkz/spyglass.docs).
 
@@ -203,6 +203,6 @@ and follow us on Twitter [@ClojureWerkz](http://twitter.com/ClojureWerkz).
 
 ## Tell Us What You Think!
 
-Please take a moment to tell us what you think about this guide on Twitter or the [Neocons mailing list](https://groups.google.com/forum/#!forum/clojure-neo4j)
+Please take a moment to tell us what you think about this guide on Twitter or the [Spyglass mailing list](https://groups.google.com/forum/#!forum/clojure-memcached)
 
 Let us know what was unclear or what has not been covered. Maybe you do not like the guide style or grammar or discover spelling mistakes. Reader feedback is key to making the documentation better.
