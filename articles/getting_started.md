@@ -49,14 +49,14 @@ See [the list of Memcached 1.4.x release notes](http://code.google.com/p/memcach
 
 ### With Leiningen
 
-    [clojurewerkz/spyglass "1.0.0-rc2"]
+    [clojurewerkz/spyglass "1.0.0"]
 
 ### With Maven
 
     <dependency>
       <groupId>clojurewerkz</groupId>
       <artifactId>spyglass</artifactId>
-      <version>1.0.0-rc2</version>
+      <version>1.0.0</version>
     </dependency>
 
 It is recommended to stay up-to-date with new versions. New releases and important changes are announced [@ClojureWerkz](http://twitter.com/ClojureWerkz).
