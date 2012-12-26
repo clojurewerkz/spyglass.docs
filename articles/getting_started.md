@@ -45,7 +45,7 @@ Spyglass supports Memcached 1.4.x (1.4.13 or later are recommended). Some featur
 See [the list of Memcached 1.4.x release notes](http://code.google.com/p/memcached/wiki/ReleaseNotes) to learn more.
 
 
-## Adding Neocons Dependency To Your Project
+## Adding Spyglass Dependency To Your Project
 
 ### With Leiningen
 
