@@ -19,7 +19,7 @@ This work is licensed under a <a rel="license" href="http://creativecommons.org/
 
 ## What version of Spyglass does this guide cover?
 
-This guide covers Spyglass 1.0.x.
+This guide covers Spyglass 1.1.x.
 
 
 ## Spyglass Overview
@@ -49,14 +49,14 @@ See [the list of Memcached 1.4.x release notes](http://code.google.com/p/memcach
 
 ### With Leiningen
 
-    [clojurewerkz/spyglass "1.0.2"]
+    [clojurewerkz/spyglass "1.1.0-beta3"]
 
 ### With Maven
 
     <dependency>
       <groupId>clojurewerkz</groupId>
       <artifactId>spyglass</artifactId>
-      <version>1.0.2</version>
+      <version>1.1.0-beta3</version>
     </dependency>
 
 It is recommended to stay up-to-date with new versions. New releases and important changes are announced [@ClojureWerkz](http://twitter.com/ClojureWerkz).
