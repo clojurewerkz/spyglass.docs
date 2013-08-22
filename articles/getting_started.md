@@ -36,7 +36,7 @@ You can use Spyglass with servers that use the Memcached protocol, for example, 
 
 ## Supported Clojure versions
 
-Spyglass is built from the ground up for Clojure 1.3 and later.
+Spyglass requires Clojure 1.4+.
 
 
 ## Supported Memcached versions
