@@ -68,11 +68,30 @@ It is recommended to stay up-to-date with new versions. New releases and importa
 Spyglass has a single namespace: `clojurewerkz.spyglass.client`. Require it and use the `clojurewerkz.spyglass.client/text-connection`
 function that take a server list string:
 
-{% gist 6911e5c9ee201c47843b %}
+```clojure
+(ns clojurewerkz.spyglass.examples
+  (:require [clojurewerkz.spyglass.client :as c]))
+
+(defn -main
+  [& args]
+  ;; connects to 2 Memcached servers using text protocol
+  (let [tmc-client (c/text-connection "server1.internal:11211 server2.internal:11211")]
+    tmc-client))
+```
+
 
 `clojurewerkz.spyglass.client/bin-connection` works the same way but uses binary Memcached protocol:
 
-{% gist ed6bb2a42b40e95884ca %}
+```clojure
+(ns clojurewerkz.spyglass.examples
+  (:require [clojurewerkz.spyglass.client :as c]))
+
+(defn -main
+  [& args]
+  ;; connects to 2 Memcached servers using binary protocol
+  (let [bmc-client (c/bin-connection "server1.internal:11211 server2.internal:11211")]
+    bmc-client))
+```
 
 
 ## Setting keys
@@ -80,7 +99,18 @@ function that take a server list string:
 To set a key, use the `clojurewerkz.spyglass.client/set` function that takes a client instance, a string key, an expiration value (as an integer) and a value
 to store and returns a future:
 
-{% gist 79d271fa55880a21669f %}
+```clojure
+(ns clojurewerkz.spyglass.examples
+  (:require [clojurewerkz.spyglass.client :as c]))
+
+(defn -main
+  [& args]
+  (let [tmc (c/text-connection "127.0.0.1:11211")
+        ;; set a key that expires in 5 minutes (300 seconds)
+        res (c/set tmc "a-key" 300 "a value")]
+    ;; results of async operations in Spyglass can be @dereferenced
+    @res))
+```
 
 ### Expiration values
 
@@ -90,8 +120,59 @@ is larger than that, the server will consider it to be real Unix time value rath
 
 ### Transcoders
 
-TBD
+Transcoder converts between byte arrays and objects for storage in the cache. Spyglass has 4 builtin factory-functions to initialize the right transcoder object for your use-case:
 
+ * **integer** - transcoder that serializes and unserializes only Integers.
+ *ps: setting a new value requires explicit type conversion, (int clojure-number)*
+
+ * **long**     - transcoder that serializes and unserializes only Longs.
+
+ * **whalin**   - transcoder that provides compatibility with Greg Whalin's memcached client. It can handle most of Clojure primitives and datastructures, except nil, record, exception. It useful when you want to integrate with [gwhalin/Memcached-Java-Client](https://github.com/gwhalin/Memcached-Java-Client).
+
+ * **serializing** - (*default*), Transcoder that serializes and compresses Java objects. It can handle most of Clojure primitives and datastructures, except nil, record, exception.
+
+###### Usage
+
+```clojure
+(require '[clojurewerkz.spyglass.client :as c])
+(require '[clojurewerkz.spyglass.transcoders :as t] :reload)
+(def tc (c/text-connection "192.168.99.100:11211"))
+
+(def nippler (t/make-transcoder :long))
+(c/set tc "abc" 30 (long 123) nippler)
+(c/get tc "abc" nippler)
+```
+
+###### Extending transcoders
+
+There maybe use-cases when you want to use transcoders that can handle wider subset of Clojure primitives - like records. Or you want to compress or encrypt a content before sending a data out to a memcached server.
+
+There're 2 very good Clojure libraries just for that: [Nippy](https://github.com/ptaoussanis/nippy) or  [Data.Fressian](https://github.com/clojure/data.fressian)
+
+Here's a little example how to write a special purpose transcoder by extending [Transcoder](http://www.couchbase.com/autodocs/spymemcached-2.8.4/net/spy/memcached/transcoders/Transcoder.html) interface.
+
+```clojure
+(require '[taoensso.nippy :as nippy])
+(import '[net.spy.memcached CachedData]
+        '[net.spy.memcached.transcoders Transcoder]))
+
+;;experimental Nippy transcoder
+(deftype NippyTranscoder []
+  net.spy.memcached.transcoders.Transcoder
+  (asyncDecode [this dt] false) ;tells should it be encoded async
+  (getMaxSize [this]
+    (int CachedData/MAX_SIZE))
+
+  (decode [this dt]
+    (-> dt (.getData) nippy/thaw))
+
+  (encode [this clj-obj]
+    (CachedData. (int 0) ;optional flags for decoding
+                 (nippy/freeze clj-obj)
+                 CachedData/MAX_SIZE)))
+```
+
+Here's a full-list of data-types Nippy transcoder supports: [https://gist.github.com/timgluz/b89ad29316d4b2633de1](https://gist.github.com/timgluz/b89ad29316d4b2633de1)
 
 ## Getting keys
 
@@ -99,14 +180,40 @@ TBD
 
 To get a value synchronously, use the `clojurewerkz.spyglass.client/get` function that takes a client instance, a string key, and returns a stored value:
 
-{% gist 64d87ac77b93e9a013b7 %}
+```clojure
+(ns clojurewerkz.spyglass.examples
+  (:require [clojurewerkz.spyglass.client :as c]))
+
+(defn -main
+  [& args]
+  (let [tmc (c/text-connection "127.0.0.1:11211")
+        ;; set a key that expires in 5 minutes (300 seconds)
+        _   (c/set tmc "a-key" 300 "a value")
+        ;; fetch it back
+        val (c/get tmc "a-key")]
+    ;; clojurewerkz.spyglass.client/get returns a value synchronously, no need to deref
+    val))
+```
 
 ### Asynchronous get
 
-Spyglass also provides a way to fetch a value asynchronously using the `clojurewerkz.spyglass.client/async-get` function that the same arguments but returns a future:
+Spyglass also provides a way to fetch a value asynchronously using
+the `clojurewerkz.spyglass.client/async-get` function that the same arguments but returns a future:
 
-{% gist ade1b1d1a5781d027412 %}
 
+```clojure
+(ns clojurewerkz.spyglass.examples
+  (:require [clojurewerkz.spyglass.client :as c]))
+
+(defn -main
+  [& args]
+  (let [tmc (c/text-connection "127.0.0.1:11211")
+        _   (c/set tmc "a-key" 300 "a value")
+        ;; fetch the value asynchronously
+        async-val (c/async-get tmc "a-key")]
+    ;; deref the result (a future)
+    @async-val))
+```
 
 ## Getting multiple keys in a single operation
 
@@ -115,22 +222,59 @@ Spyglass also provides a way to fetch a value asynchronously using the `clojurew
 It is possible to get multiple values in a single request using the `clojurewerkz.spyglass.client/get-multi` function that takes a client instance, a collection of keys, and returns
 an immutable map of stored values:
 
-{% gist 218b26c955e68e411f1d %}
+```clojure
+(ns clojurewerkz.spyglass.examples
+  (:require [clojurewerkz.spyglass.client :as c]))
 
+(defn -main
+  [& args]
+  (let [tmc (c/text-connection "127.0.0.1:11211")
+        _   (c/set tmc "a-key" 300 "a value")
+        _   (c/set tmc "another-key" 300 "another value")
+        ;; fetch both values back in a single request
+        m   (c/get-multi tmc ["a-key" "another-key"])]
+    ;; clojurewerkz.spyglass.client/get-multi returns an immutable map synchronously, no need to deref
+    (println m)))
+```
 
 ### Asynchronous multi-get
 
 Asynchronous multi-get is available via the `clojurewerkz.spyglass.client/async-get-multi` function that returns a future that, when dereferenced, returns a map
 of results:
 
-{% gist 0610038900a52b02a154 %}
+```clojure
+(ns clojurewerkz.spyglass.examples
+  (:require [clojurewerkz.spyglass.client :as c]))
 
+(defn -main
+  [& args]
+  (let [tmc (c/text-connection "127.0.0.1:11211")
+        _   (c/set tmc "a-key" 300 "a value")
+        _   (c/set tmc "another-key" 300 "another value")
+        ;; fetch both values back in a single request
+        async-val (c/async-get-multi tmc ["a-key" "another-key"])]
+    ;; clojurewerkz.spyglass.client/async-get-multi returns a future that, when dereferenced,
+    ;; returns an immutable map
+    (println @async-val)))
+```
 
 ## Deleting keys
 
 To delete a key, use the `clojurewerkz.spyglass.client/delete` function that has the same signature as (2-arity) `clojurewerkz.spyglass.client/get`:
 
-{% gist 3807c05c44bbbd1d21bd %}
+```clojure
+(ns clojurewerkz.spyglass.examples
+  (:require [clojurewerkz.spyglass.client :as c]))
+
+(defn -main
+  [& args]
+  (let [tmc (c/text-connection "127.0.0.1:11211")
+        _   (c/set tmc "a-key" 300 "a value")
+        async-val (c/delete tmc "a-key")]
+    ;; deletes are always asynchronous so to get the returned value
+    ;; you need to @dereference it
+    @async-val))
+```
 
 Delete operations are always asynchronous and always return a future.
 
@@ -139,10 +283,21 @@ Delete operations are always asynchronous and always return a future.
 
 To touch a key means to reset or update its expiration time using the `clojurewerkz.spyglass.client/touch` function:
 
-{% gist cc701c1a08235ab6115d %}
+```clojure
+(ns clojurewerkz.spyglass.examples
+  (:require [clojurewerkz.spyglass.client :as c]))
+
+(defn -main
+  [& args]
+  (let [tmc (c/text-connection "127.0.0.1:11211")
+        _   (c/set tmc "a-key" 300 "a value")
+        ;; touch the given key to reset its expiration time
+        async-val (c/touch tmc "a-key" 450)]
+    @async-val))
+```
 
 When touching keys, values lower than `60*60*24*30` are treated as relative offset (a number of seconds starting from current time) and values greater than that
-are treated as absolute Unix timestamps. 
+are treated as absolute Unix timestamps.
 
 
 ## add operation
@@ -150,7 +305,17 @@ are treated as absolute Unix timestamps.
 Sometimes you only need to add a value to the cache but only if does not already exist. This is what the `clojurewerkz.spyglass.client/add` function does
 in a single request:
 
-{% gist ec5949989148630aa4fe %}
+```clojure
+(ns clojurewerkz.spyglass.examples
+  (:require [clojurewerkz.spyglass.client :as c]))
+
+(defn -main
+  [& args]
+  (let [tmc (c/text-connection "127.0.0.1:11211")
+        ;; adds a value only if does not already exist
+        async-val (c/add tmc "a-key" 300 "a value")]
+    (println @async-val)))
+```
 
 This function returns a future that, when dereferenced, returns a boolean (false if the mutation did not occur, true if it did).
 
@@ -160,7 +325,20 @@ This function returns a future that, when dereferenced, returns a boolean (false
 `clojurewerkz.spyglass.client/replace` is similar to `clojurewerkz.spyglass.client/add` but will replace a value with the given one if
 there is already a value for the given key:
 
-{% gist f6f6d318caf9f2fa33ec %}
+```clojure
+(ns clojurewerkz.spyglass.examples
+  (:require [clojurewerkz.spyglass.client :as c]))
+
+(defn -main
+  [& args]
+  (let [tmc (c/text-connection "127.0.0.1:11211")
+        ;; replaces a value if it is already set
+        async-val1 (c/replace tmc "a-new-key" 300 "a value")
+        _          (c/set tmc "a-new-key" 300 "a value")
+        async-val2 (c/replace tmc "a-new-key" 300 "another value")]
+    (println @async-val1)
+    (println @async-val2)))
+```
 
 This function returns a future that, when dereferenced, returns a boolean (false if the mutation did not occur, true if it did).
 
@@ -184,13 +362,29 @@ TBD
 
 To disconnect, use the `clojurewerkz.spyglass.client/shutdown` function:
 
-{% gist bebff41cb472cafb7d8c %}
+```clojure
+(ns clojurewerkz.spyglass.examples
+  (:require [clojurewerkz.spyglass.client :as c]))
+
+(defn -main
+  [& args]
+  (let [tmc (c/text-connection "127.0.0.1:11211")]
+    ;; disconnect immediately
+    (c/shutdown tmc)))
+```
 
 It is also possible to let all running asynchronous operations to finish by disconnecting with a timeout:
 
-{% gist 973fb66b88e07ce2a454 %}
+```clojure
+(ns clojurewerkz.spyglass.examples
+  (:require [clojurewerkz.spyglass.client :as c]))
 
-
+(defn -main
+  [& args]
+  (let [tmc (c/text-connection "127.0.0.1:11211")]
+    ;; disconnect in 3 seconds
+    (c/shutdown tmc 3 java.util.concurrent.TimeUnit/SECONDS)))
+```
 
 ## Wrapping up
 
