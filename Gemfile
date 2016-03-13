@@ -1,6 +1,8 @@
 source "https://rubygems.org"
 
-gem "jekyll", "~> 2.5.3"
+gem "jekyll", "~> 3.1"
+gem 'jekyll-gist'
+gem 'kramdown'
 # with Ruby 2.0 on OS X, you may need to install
 # it manually with --with-iconv-dir:
 #

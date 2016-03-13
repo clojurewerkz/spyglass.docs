@@ -1,7 +1,8 @@
 source:      .
 destination: ./_site
-plugins:     ./_plugins
-auto: true
+layouts_dir: ./_layouts
+plugins_dir: ./_plugins
 exclude: [bin, CNAME, Gemfile, Gemfile.lock, README.md]
-markdown: rdiscount
+markdown: kramdown
 permalink: /:title
+highlighter: rouge
