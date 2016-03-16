@@ -350,13 +350,56 @@ TBD
 
 ## increments, decrements operations
 
-TBD
+
+Increment the given key by the given amount. 
+Returns the new value, or -1 if we were unable to decrement or add.
+
+```clojure
+(c/incr tc "the-session-counter" 1)
+```
+
+Increment the given counter, returning the new value. A default value is used only if it doesnt exist;
+
+```clojure
+(c/incr client the-key increment-by default-value)
+(c/incr tc "the-session-counter" 1 0)
+
+(c/incr client the-key increment-by default-value time-to-live-seconds)
+(c/incr tc "the-session-counter" 1 0 300)
+```
+
+Decrement follows similar interface:
+
+```clojure
+(c/decr client the-key increment-by)
+(c/decr client "candies-left" 1)
+
+(c/decr client the-key increment-by default-value)
+(c/decr client "candies-left" 1 99)
+
+(c/decr client the-key increment-by default-value time-to-live-seconds)
+(c/decr client "candies-left" 1 99 300)
+
+```
 
 
 ## Getting stats
 
-TBD
+Get all of the stats from all of the connections. 
+Returns hash-map, in which hosts are keys and statistics are values.
 
+```clojure
+(c/get-stats tc)
+(c/get-stats tc "items")
+```
+
+Accepted arguments for 2nd argument: [source](http://lzone.de/articles/memcached.htm)
+
+* default, shows a current traffic & usage statistics (*uptime, total-items, total-connections, threads, ...*)
+* **slabs** - memory metrics (*chunk-size, chunks-per-page, total-malloced*)
+* **items** - items statistics (*items:14:evicted" "0", "items:8:age" "241088", "items:1:crawler_items_checked*)
+* **sizes** - returns list of keys used and their statistics
+* **reset** - resets statistics
 
 ## Disconnecting from Memcached
 
